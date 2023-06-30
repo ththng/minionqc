@@ -22,12 +22,12 @@ if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input sample
     CONFIG FILES
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
+/*
 ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
 ch_multiqc_custom_config   = params.multiqc_config ? Channel.fromPath( params.multiqc_config, checkIfExists: true ) : Channel.empty()
 ch_multiqc_logo            = params.multiqc_logo   ? Channel.fromPath( params.multiqc_logo, checkIfExists: true ) : Channel.empty()
 ch_multiqc_custom_methods_description = params.multiqc_methods_description ? file(params.multiqc_methods_description, checkIfExists: true) : file("$projectDir/assets/methods_description_template.yml", checkIfExists: true)
-
+*/
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -37,7 +37,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK } from '../subworkflows/local/input_check'
+//include { INPUT_CHECK } from '../subworkflows/local/input_check'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,10 +48,16 @@ include { INPUT_CHECK } from '../subworkflows/local/input_check'
 //
 // MODULE: Installed directly from nf-core/modules
 //
+/*
 include { FASTQC                      } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
-
+*/
+include { CHOPPER                     } from '../modules/local/chopper'
+include { PRINSEQ                     } from '../modules/local/prinseq'
+include { NOQC                        } from '../modules/local/noqc'
+include { ASSEMBLY                    } from '../modules/local/assembly'
+include { QUAST                       } from '../modules/local/quast'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -59,10 +65,46 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 */
 
 // Info required for completion email and summary
-def multiqc_report = []
+// def multiqc_report = []
 
 workflow MINIONQC {
 
+    //
+    // MODULE: CHOPPER
+    //
+    chopper_ch = CHOPPER(ch_input, params.quality_modes)
+
+    //
+    // MODULE: PRINSEQ
+    //
+    prinseq_ch = PRINSEQ(ch_input, params.quality_modes)
+
+    //
+    // MODULE: NOQC
+    //
+    noqc_ch = NOQC(ch_input)
+
+    // Concatenate all items emitted by the different QC Tools
+    qc_output_ch = chopper_ch
+        .concat(prinseq_ch, noqc_ch)
+
+    //
+    // MODULE: FLYE ASSEMBLY
+    //
+    assembly_ch = ASSEMBLY (qc_output_ch, params.nano_modes)
+
+    // Collect all assembly.fasta files to one object, that is solely emitted
+    collected_assemblies_ch = assembly_ch
+        .collect()
+        .view()
+
+    quast_input_ch = Channel.fromPath(params.quast_input)
+    //
+    // MODULE: QUAST ANALYSIS
+    //
+    QUAST(collected_assemblies_ch, quast_input_ch)
+
+/*
     ch_versions = Channel.empty()
 
     //
@@ -107,6 +149,7 @@ workflow MINIONQC {
         ch_multiqc_logo.toList()
     )
     multiqc_report = MULTIQC.out.report.toList()
+    */
 }
 
 /*
@@ -114,7 +157,7 @@ workflow MINIONQC {
     COMPLETION EMAIL AND SUMMARY
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
+/*
 workflow.onComplete {
     if (params.email || params.email_on_fail) {
         NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
@@ -124,7 +167,7 @@ workflow.onComplete {
         NfcoreTemplate.IM_notification(workflow, params, summary_params, projectDir, log)
     }
 }
-
+*/
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     THE END

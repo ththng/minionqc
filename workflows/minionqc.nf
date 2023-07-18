@@ -7,7 +7,7 @@
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
 // Validate input parameters
-WorkflowMinionqc.initialise(params, log)
+//WorkflowMinionqc.initialise(params, log)
 
 // TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
@@ -37,7 +37,8 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-//include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { QC_ASSEMBLY_ASSESSMENT } from '../subworkflows/local/qc_assembly_assessment'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,12 +53,13 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 include { FASTQC                      } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
-*/
 include { CHOPPER                     } from '../modules/local/chopper'
 include { PRINSEQ                     } from '../modules/local/prinseq'
 include { NOQC                        } from '../modules/local/noqc'
 include { ASSEMBLY                    } from '../modules/local/assembly'
 include { QUAST                       } from '../modules/local/quast'
+*/
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -70,39 +72,18 @@ include { QUAST                       } from '../modules/local/quast'
 workflow MINIONQC {
 
     //
-    // MODULE: CHOPPER
+    // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
-    chopper_ch = CHOPPER(ch_input, params.quality_modes)
+    INPUT_CHECK (
+        ch_input
+    )
 
-    //
-    // MODULE: PRINSEQ
-    //
-    prinseq_ch = PRINSEQ(ch_input, params.quality_modes)
+    input_ch = INPUT_CHECK.out.reads
+    input_ch.view()
 
-    //
-    // MODULE: NOQC
-    //
-    noqc_ch = NOQC(ch_input)
-
-    // Concatenate all items emitted by the different QC Tools
-    qc_output_ch = chopper_ch
-        .concat(prinseq_ch, noqc_ch)
-
-    //
-    // MODULE: FLYE ASSEMBLY
-    //
-    assembly_ch = ASSEMBLY (qc_output_ch, params.nano_modes)
-
-    // Collect all assembly.fasta files to one object, that is solely emitted
-    collected_assemblies_ch = assembly_ch
-        .collect()
-        .view()
-
-    quast_input_ch = Channel.fromPath(params.quast_input)
-    //
-    // MODULE: QUAST ANALYSIS
-    //
-    QUAST(collected_assemblies_ch, quast_input_ch)
+    QC_ASSEMBLY_ASSESSMENT (
+        INPUT_CHECK.out.reads
+    ).view()
 
 /*
     ch_versions = Channel.empty()

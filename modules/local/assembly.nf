@@ -8,7 +8,7 @@ process ASSEMBLY {
     input:
     tuple val (meta), val (prefix), path (preprocessed_reads)
     each nano_mode
-    
+
     output:
     path ("*.fasta.gz")
 

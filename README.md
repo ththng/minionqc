@@ -52,6 +52,15 @@ As the desired output is the report created by QUAST, the report can be found in
 ## Own work
 Since the project was created using nf-core it still contains some boilerplate code. The own work can be found in the folders [workflows](workflows), [subworkflows/local](subworkflows/local) and [modules/local](modules/local) (Except for the files [samplesheet_check.nf](modules/local/samplesheet_check.nf) and [input_check.nf](subworkflows/local/input_check.nf) - they only were adjusted to the specific needs of this pipeline). The only boilerplate config files that were used are [nextflow.config](nextflow.config) and [modules.config](conf/modules.config).
 
+## Citations
+
+<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi and badge at the top of this file. -->
+<!-- If you use  test/deleteboilerplate for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+
+<!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
+
+An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
+
 This pipeline uses code and infrastructure developed and maintained by the [nf-core](https://nf-co.re) community, reused here under the [MIT license](https://github.com/nf-core/tools/blob/master/LICENSE).
 
 > The nf-core framework for community-curated bioinformatics pipelines.
@@ -60,4 +69,3 @@ This pipeline uses code and infrastructure developed and maintained by the [nf-c
 >
 > Nat Biotechnol. 2020 Feb 13. doi: 10.1038/s41587-020-0439-x.
 > In addition, references of tools and data used in this pipeline are as follows:
-
